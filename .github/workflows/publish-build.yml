@@ -47,11 +47,8 @@ jobs:
           docker login beneliyahu.jfrog.io -u beneliyahu --password-stdin
 
       - name: Build Docker image
-        run: |
-          docker build \
-            -t ${{ secrets.DOCKER_REPO }}/${{ env.IMAGE_NAME }}:${{ github.run_number }} \
-            -t ${{ secrets.DOCKER_REPO }}/${{ env.IMAGE_NAME }}:latest \
-            .
+        run: docker build -t ${{ secrets.DOCKER_REPO }}/${{ env.IMAGE_NAME }}:${{ github.run_number }} -t ${{ secrets.DOCKER_REPO }}/${{ env.IMAGE_NAME }}:latest .
+
 
       - name: Push Docker image via JFrog CLI
         run: |
