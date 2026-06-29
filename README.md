@@ -37,19 +37,19 @@ After Contextual Analysis: **2 applicable High vulnerabilities** in the npm app.
 
 ### Before remediation — Build #7
 
-![Before remediation](screenshots/before.png)
+![Before remediation](screenshots/before.PNG)
 
 161 CVEs total. Both moment (CVE-2022-31129) and body-parser (CVE-2024-45590) flagged as Applicable.
 
 ### After remediation — Build #8
 
-![After remediation](screenshots/after.png)
+![After remediation](screenshots/after.PNG)
 
 159 CVEs total. moment CVE-2022-31129 removed. body-parser remains (transitive dependency).
 
 ### Versions Diff — Build #7 → Build #8
 
-![Versions diff](screenshots/diff.png)
+![Versions diff](screenshots/diff.PNG)
 
 | Metric | Build #7 | Build #8 | Delta |
 |---|---|---|---|
