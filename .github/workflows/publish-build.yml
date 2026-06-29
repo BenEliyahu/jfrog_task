@@ -29,10 +29,7 @@ jobs:
           JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
 
       - name: Configure npm with Artifactory
-        run: |
-          jf npm-config \
-            --repo-resolve ${{ vars.NPM_VIRTUAL_REPO }} \
-            --server-id-resolve setup-jfrog-cli
+        run: jf npm-config --repo-resolve ${{ vars.NPM_VIRTUAL_REPO }}
 
       - name: Install dependencies (via Artifactory)
         run: |
