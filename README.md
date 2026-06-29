@@ -1,149 +1,86 @@
-# User Management Service
+# JFrog Task — Stage 2
 
-A simple Node.js API service for managing users. This service provides basic CRUD operations for user management with REST endpoints.
+**JFrog Instance:** https://beneliyahu.jfrog.io  
+**Fork of:** https://github.com/yonarbel/jfrog_task
 
-## Features
+---
 
-- User CRUD operations (Create, Read, Update, Delete)
-- User search and pagination
-- JWT-based authentication
-- Input validation
-- External API integration
-- Random user generation for testing
-- Docker support
+## What This App Does
 
-## Tech Stack
+A Node.js/Express REST API for user management, built intentionally with
+outdated dependencies to demonstrate DevSecOps scanning and remediation.
 
-- Node.js
-- Express.js
-- JWT for authentication
-- bcrypt for password hashing
-- Lodash for utility functions
-- Moment.js for date handling
-- Axios for HTTP requests
-- Validator for input validation
+**Stack:** Node.js 18, Express 4, axios, lodash, moment, jsonwebtoken
 
-## API Endpoints
+---
 
-### Health Check
-- `GET /health` - Check service health
+## Setup & CI/CD
 
-### Authentication
-- `POST /api/auth/login` - User login
+- **JFrog Free Trial:** https://beneliyahu.jfrog.io
+- **npm packages** resolved via JFrog Artifactory (`npm-virtual`)
+- **Docker image** pushed to `beneliyahu.jfrog.io/docker-local`
+- **Build Info** published to Artifactory on every push via JFrog CLI
+- **CI:** GitHub Actions — `.github/workflows/publish-build.yml`
 
-### Users
-- `GET /api/users` - Get all users (with pagination and search)
-- `GET /api/users/:id` - Get user by ID
-- `POST /api/users` - Create new user
-- `PUT /api/users/:id` - Update user
-- `DELETE /api/users/:id` - Delete user
-- `POST /api/users/generate-random` - Generate random test users
+---
 
-### External Data
-- `GET /api/external-data` - Fetch and process external user data
+## a. Vulnerability Scan Results
 
-## Quick Start
+Scanned using **JFrog Xray** with Contextual Analysis enabled.
 
-### Local Development
+Raw scan: **161 total CVEs** across all components.  
+After Contextual Analysis: **2 applicable High vulnerabilities** in the npm app.
 
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
+| CVE | Package | Severity | Fix Version | Why Applicable |
+|---|---|---|---|---|
+| CVE-2024-45590 | body-parser 1.x | High 8.7 | 1.20.3 | App processes user HTTP request bodies via `express.json()` — the vulnerable parsing code runs on every request |
+| CVE-2022-31129 | moment 2.19.3 | High 7.5 | 2.29.4 | App calls `moment()` in `users.js` to generate timestamps — the vulnerable regex path is reachable |
 
-2. Start the development server:
-   ```bash
-   npm run dev
-   ```
+---
 
-3. The service will be available at `http://localhost:3000`
+## b. What is "Applicable" / Contextual Analysis?
 
-### Production
+A standard vulnerability scanner looks at every package in `node_modules`
+and reports every known CVE — regardless of whether your code actually
+uses the vulnerable function.
 
-1. Install dependencies:
-   ```bash
-   npm install --production
-   ```
+**Contextual Analysis** (JFrog Xray) goes further: it traces the actual
+call graph of your application to determine whether the vulnerable code
+path is reachable with user-controlled input.
 
-2. Start the server:
-   ```bash
-   npm start
-   ```
+**Example from this app:**  
+`lodash 4.17.4` contains a known Prototype Pollution CVE in `_.template()`.
+But this app never calls `_.template()` — so Xray marks it as
+**Not Applicable**. It won't be exploited in this specific context.
 
-### Docker
+By contrast, `moment 2.19.3` has a ReDoS vulnerability that triggers when
+parsing certain date strings. The app calls `moment()` in `users.js` with
+data that flows from user input — so Xray marks it as **Applicable**.
 
-1. Build the Docker image:
-   ```bash
-   npm run docker:build
-   ```
+**Why this changes prioritization:**
 
-2. Run the container:
-   ```bash
-   npm run docker:run
-   ```
+| Without Contextual Analysis | With Contextual Analysis |
+|---|---|
+| 161 vulnerabilities to triage | 2 vulnerabilities to fix |
+| Security team overwhelmed | Clear, focused action |
+| Risk of fixing the wrong things | Fix what actually matters |
 
-### Publishing
+Instead of spending days triaging 161 CVEs, the team focuses exclusively
+on the 2 that can actually be exploited — a **98% reduction in noise**.
 
-1. Create a package (.tgz file):
-   ```bash
-   npm run pack
-   ```
+---
 
-2. Publish to npm registry:
-   ```bash
-   npm run publish
-   ```
+## c. Remediation
 
-3. Publish to custom registry (e.g., Artifactory):
-   ```bash
-   # First configure your registry
-   npm config set registry <your-artifactory-url>
-   
-   # Then publish
-   npm run publish
-   ```
+**Chose to fix: CVE-2022-31129 (moment ReDoS)**
 
-4. Or use the helper command for Artifactory:
-   ```bash
-   npm run publish:artifactory
-   ```
+**Why this one:**  
+- `moment` is a **direct dependency** in `package.json` — simple to update
+- The fix is non-breaking: API is identical between 2.19.3 and 2.29.4
+- The vulnerability (ReDoS) can cause **denial of service** by sending
+  a crafted date string that causes catastrophic regex backtracking
 
-## Environment Variables
-
-Create a `.env` file based on `.env.example`:
-
-- `PORT` - Server port (default: 3000)
-- `NODE_ENV` - Environment (development/production)
-- `JWT_SECRET` - Secret key for JWT tokens
-
-## Testing
-
-Run tests:
-```bash
-npm test
-```
-
-## API Examples
-
-### Create a user
-```bash
-curl -X POST http://localhost:3000/api/users \
-  -H "Content-Type: application/json" \
-  -d '{"username": "newuser", "email": "user@example.com"}'
-```
-
-### Get all users
-```bash
-curl http://localhost:3000/api/users
-```
-
-### Login
-```bash
-curl -X POST http://localhost:3000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username": "admin", "password": "password123"}'
-```
-
-## License
-
-MIT 
+**Approach:**  
+Updated `package.json`:
+```json
+"moment": "2.29.4"
