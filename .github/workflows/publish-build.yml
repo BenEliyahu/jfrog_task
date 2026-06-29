@@ -32,10 +32,8 @@ jobs:
         run: jf npm-config --repo-resolve ${{ vars.NPM_VIRTUAL_REPO }}
 
       - name: Install dependencies (via Artifactory)
-        run: |
-          jf npm ci \
-            --build-name=${{ env.BUILD_NAME }} \
-            --build-number=${{ github.run_number }}
+        run: jf npm install --build-name=${{ env.BUILD_NAME }} --build-number=${{ github.run_number }}
+
 
       - name: Xray Security Audit
         run: jf audit --npm --fail=false
